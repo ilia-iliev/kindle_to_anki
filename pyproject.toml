@@ -1,0 +1,22 @@
+[project]
+name = "kindle-to-anki"
+version = "0.1.0"
+description = "Application that reads Kindle highlights and prepares them for AnkiDroid import"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "pytest>=7.0.0",
+    "requests>=2.31.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
