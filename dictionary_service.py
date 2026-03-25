@@ -199,17 +199,81 @@ class DictionaryService:
             entry = data[0]
 
             # Look for meanings in the entry
-            if "meanings" in entry and entry["meanings"]:
-                meaning = entry["meanings"][0]  # Get first meaning
+            if "meanings" not in entry or not entry["meanings"]:
+                return None
 
-                # Look for definitions in the meaning
-                if "definitions" in meaning and meaning["definitions"]:
-                    definition_obj = meaning["definitions"][0]  # Get first definition
+            all_definitions = []
+            definition_number = 1
 
+            # Process all meanings (parts of speech)
+            for meaning in entry["meanings"]:
+                if "definitions" not in meaning or not meaning["definitions"]:
+                    continue
+
+                # Get part of speech category
+                part_of_speech = meaning.get("partOfSpeech", "")
+                category = self._get_word_category(part_of_speech)
+
+                # Process all definitions for this part of speech
+                for definition_obj in meaning["definitions"]:
                     if "definition" in definition_obj:
-                        return definition_obj["definition"]
+                        definition_text = definition_obj["definition"]
+                        # Remove quotes from definition
+                        definition_text = self._remove_quotes(definition_text)
+
+                        if category:
+                            all_definitions.append(
+                                f"({category}) {definition_number}. {definition_text}"
+                            )
+                        else:
+                            all_definitions.append(
+                                f"{definition_number}. {definition_text}"
+                            )
+
+                        definition_number += 1
+
+            # Join all definitions with newlines
+            if all_definitions:
+                return "\n".join(all_definitions)
 
             return None
 
         except (KeyError, IndexError, TypeError):
             return None
+
+    def _get_word_category(self, part_of_speech: str) -> str:
+        """
+        Convert part of speech to abbreviated category.
+
+        Args:
+            part_of_speech: Full part of speech string.
+
+        Returns:
+            Abbreviated category string.
+        """
+        category_map = {
+            "verb": "v",
+            "noun": "n",
+            "adjective": "adj",
+            "adverb": "adv",
+            "pronoun": "pron",
+            "preposition": "prep",
+            "conjunction": "conj",
+            "interjection": "interj",
+        }
+
+        return category_map.get(part_of_speech.lower(), "")
+
+    def _remove_quotes(self, text: str) -> str:
+        """
+        Remove quotes from text.
+
+        Args:
+            text: Text that may contain quotes.
+
+        Returns:
+            Text with quotes removed.
+        """
+        # Remove all quotes from the text
+        text = text.replace('"', "").replace("'", "")
+        return text.strip()

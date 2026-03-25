@@ -12,5 +12,4 @@ uv.lock
 
 # Local, user-specific files
 words.csv
-last_access.txt
 .env

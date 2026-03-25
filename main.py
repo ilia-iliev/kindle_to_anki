@@ -9,8 +9,6 @@ from anki_importer import CSVExporter, CSVExportError
 
 
 def main():
-    """Main function implementing features 1.1, 1.2, and 2.1 from PRD."""
-    # Parse command line arguments
     parser = argparse.ArgumentParser(
         description="Kindle to Anki - Reading probable unknown words"
     )
@@ -31,8 +29,6 @@ def main():
     detector = KindleDetector()
 
     try:
-        # Feature 1.1: Detect if Kindle is attached and readable
-        print("Checking if Kindle device is attached...")
         detector.detect_kindle()
         print("✓ Kindle device detected and accessible!")
         print(f"Kindle found at: {detector.mount_path}")
@@ -70,11 +66,13 @@ def main():
         if words:
             print("\nFetching word definitions from dictionary...")
             print("Exporting words to CSV with definitions...")
+            print("Note: Words without definitions will be filtered out.")
             try:
                 exporter = CSVExporter(output_dir=args.output_dir, use_dictionary=True)
                 csv_path = exporter.export_words_to_csv(words)
+                print(f"✓ Successfully exported words with definitions to: {csv_path}")
                 print(
-                    f"✓ Successfully exported {len(words)} words with definitions to: {csv_path}"
+                    f"  (Some words may have been filtered out due to missing definitions)"
                 )
             except CSVExportError as e:
                 print(f"✗ Failed to export words to CSV: {e}")

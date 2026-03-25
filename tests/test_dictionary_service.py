@@ -162,7 +162,7 @@ class TestDictionaryService:
         ):
             definition = service.get_definition("test")
 
-            assert definition == "test definition"
+            assert definition == "1. test definition"
             # Verify it was called 3 times (2 failures + 1 success)
             assert service.session.get.call_count == 3
 
@@ -265,3 +265,174 @@ class TestDictionaryService:
 
             # Should be called 4 times (initial + 3 retries)
             assert service.session.get.call_count == 4
+
+    def test_extract_definition_with_word_category(self):
+        """Test that definitions include word category (part of speech)."""
+        service = DictionaryService()
+
+        # Mock response with part of speech
+        mock_response = Mock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = [
+            {
+                "meanings": [
+                    {
+                        "partOfSpeech": "verb",
+                        "definitions": [{"definition": "To move swiftly on foot"}],
+                    }
+                ]
+            }
+        ]
+
+        with patch.object(service.session, "get", return_value=mock_response):
+            definition = service.get_definition("run")
+            assert definition == "(v) 1. To move swiftly on foot"
+
+    def test_extract_definition_with_multiple_definitions(self):
+        """Test that multiple definitions are included and numbered."""
+        service = DictionaryService()
+
+        # Mock response with multiple definitions
+        mock_response = Mock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = [
+            {
+                "meanings": [
+                    {
+                        "partOfSpeech": "noun",
+                        "definitions": [
+                            {"definition": "Act of running"},
+                            {"definition": "A journey or trip"},
+                            {"definition": "A flow of liquid"},
+                        ],
+                    }
+                ]
+            }
+        ]
+
+        with patch.object(service.session, "get", return_value=mock_response):
+            definition = service.get_definition("run")
+            expected = "(n) 1. Act of running\n(n) 2. A journey or trip\n(n) 3. A flow of liquid"
+            assert definition == expected
+
+    def test_extract_definition_with_multiple_parts_of_speech(self):
+        """Test that definitions from different parts of speech are included."""
+        service = DictionaryService()
+
+        # Mock response with multiple parts of speech
+        mock_response = Mock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = [
+            {
+                "meanings": [
+                    {
+                        "partOfSpeech": "verb",
+                        "definitions": [{"definition": "To move swiftly"}],
+                    },
+                    {
+                        "partOfSpeech": "noun",
+                        "definitions": [{"definition": "Act of running"}],
+                    },
+                    {
+                        "partOfSpeech": "adjective",
+                        "definitions": [{"definition": "In a liquid state"}],
+                    },
+                ]
+            }
+        ]
+
+        with patch.object(service.session, "get", return_value=mock_response):
+            definition = service.get_definition("run")
+            expected = "(v) 1. To move swiftly\n(n) 2. Act of running\n(adj) 3. In a liquid state"
+            assert definition == expected
+
+    def test_extract_definition_removes_quotes(self):
+        """Test that quotes are removed from definitions."""
+        service = DictionaryService()
+
+        # Mock response with quoted definition
+        mock_response = Mock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = [
+            {
+                "meanings": [
+                    {
+                        "partOfSpeech": "noun",
+                        "definitions": [{"definition": '"A person who runs"'}],
+                    }
+                ]
+            }
+        ]
+
+        with patch.object(service.session, "get", return_value=mock_response):
+            definition = service.get_definition("runner")
+            assert definition == "(n) 1. A person who runs"
+
+    def test_extract_definition_with_complex_quotes(self):
+        """Test that complex quote patterns are handled correctly."""
+        service = DictionaryService()
+
+        # Mock response with complex quotes
+        mock_response = Mock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = [
+            {
+                "meanings": [
+                    {
+                        "partOfSpeech": "noun",
+                        "definitions": [
+                            {"definition": '"Hello" means "greeting"'},
+                            {"definition": "A word without quotes"},
+                        ],
+                    }
+                ]
+            }
+        ]
+
+        with patch.object(service.session, "get", return_value=mock_response):
+            definition = service.get_definition("hello")
+            expected = "(n) 1. Hello means greeting\n(n) 2. A word without quotes"
+            assert definition == expected
+
+    def test_extract_definition_handles_empty_definitions(self):
+        """Test that empty or missing definitions are handled gracefully."""
+        service = DictionaryService()
+
+        # Mock response with empty definitions
+        mock_response = Mock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = [
+            {"meanings": [{"partOfSpeech": "noun", "definitions": []}]}
+        ]
+
+        with patch.object(service.session, "get", return_value=mock_response):
+            definition = service.get_definition("test")
+            assert definition is None
+
+    def test_extract_definition_handles_missing_part_of_speech(self):
+        """Test that missing part of speech is handled gracefully."""
+        service = DictionaryService()
+
+        # Mock response without part of speech
+        mock_response = Mock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = [
+            {"meanings": [{"definitions": [{"definition": "A test definition"}]}]}
+        ]
+
+        with patch.object(service.session, "get", return_value=mock_response):
+            definition = service.get_definition("test")
+            assert definition == "1. A test definition"
+
+    def test_extract_definition_handles_malformed_response(self):
+        """Test that malformed API responses are handled gracefully."""
+        service = DictionaryService()
+
+        # Mock malformed response
+        mock_response = Mock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = [{"meanings": "not a list"}]
+
+        with patch.object(service.session, "get", return_value=mock_response):
+            definition = service.get_definition("test")
+            assert definition is None

@@ -51,11 +51,16 @@ class CSVExporter:
             with open(csv_path, "w", newline="", encoding="utf-8") as csvfile:
                 writer = csv.writer(csvfile, delimiter=";")
 
-                # Write words
+                # Write words with definitions
+                exported_count = 0
                 for word in words:
                     cleaned_word = self._clean_word_for_csv(word)
                     definition = self._get_definition(cleaned_word)
-                    writer.writerow([cleaned_word, definition])
+
+                    # Feature: If there is no definition found, don't add the word to the .csv
+                    if definition and definition.strip():
+                        writer.writerow([cleaned_word, definition])
+                        exported_count += 1
 
         except (OSError, IOError) as e:
             raise CSVExportError(f"Failed to create CSV file: {e}")
@@ -105,7 +110,7 @@ class CSVExporter:
         cleaned = re.sub(r"\s+", " ", word.strip())
         return cleaned
 
-    def _get_definition(self, word: str) -> str:
+    def _get_definition(self, word: str) -> Optional[str]:
         """
         Get definition for a word.
 
@@ -113,18 +118,19 @@ class CSVExporter:
             word: Word to get definition for.
 
         Returns:
-            Definition of the word, or fallback definition if not found.
+            Definition of the word, or None if not found.
         """
         if not self.use_dictionary or not self.dictionary_service:
-            # Fallback to dummy definition
-            return f"Definition of {word}"
+            # Return None if dictionary service is not available
+            return None
 
         try:
             definition = self.dictionary_service.get_definition(word)
             if definition:
                 return definition
             else:
-                return f"Definition not found for {word}"
+                # Return None if no definition found (will be filtered out)
+                return None
         except DictionaryServiceError:
-            # If dictionary service fails, use fallback
-            return f"Definition of {word} (API unavailable)"
+            # If dictionary service fails, return None (will be filtered out)
+            return None

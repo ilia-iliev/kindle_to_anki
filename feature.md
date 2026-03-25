@@ -1,1 +1,0 @@
-Do more ethical scraping of the API when querying for definitions. Do no more than 10 requests per second. And retry if unavailable, up to 3 times
