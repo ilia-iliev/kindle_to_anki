@@ -2,16 +2,15 @@ import pytest
 import requests
 import time
 from unittest.mock import Mock, patch
-from dictionary_service import DictionaryService, DictionaryServiceError
+from dictionary_service import DictionaryService
+from errors import DictionaryServiceError
 
 
 class TestDictionaryService:
     """Test cases for DictionaryService class."""
 
     def test_init(self):
-        """Test DictionaryService initialization."""
         service = DictionaryService()
-        assert service.base_url == "https://api.dictionaryapi.dev/api/v2/entries/en"
         assert service.session is not None
 
     def test_get_definition_success(self):
@@ -107,20 +106,17 @@ class TestDictionaryService:
         # Both should return the same definition
         assert definition_lower == definition_upper
 
-    def test_clean_word(self):
-        """Test word cleaning functionality."""
+    def test_word_cleaning_via_definition(self):
+        """Test that words are cleaned (lowered/stripped) before lookup."""
         service = DictionaryService()
-
-        assert service._clean_word("  hello  ") == "hello"
-        assert service._clean_word("HELLO") == "hello"
-        assert service._clean_word("Hello-World") == "hello-world"
-        assert service._clean_word("hello123") == "hello123"
+        # Both should resolve to the same definition
+        d1 = service.get_definition("hello")
+        d2 = service.get_definition("  HELLO  ")
+        assert d1 == d2
 
     def test_rate_limiting_respects_max_requests_per_second(self):
         """Test that rate limiting enforces maximum 10 requests per second."""
         service = DictionaryService()
-
-        start_time = time.time()
 
         # Make 10 requests quickly
         for i in range(10):

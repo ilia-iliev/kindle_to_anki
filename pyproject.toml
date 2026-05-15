@@ -5,6 +5,7 @@ description = "Application that reads Kindle highlights and prepares them for An
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
+    "platformdirs>=4.9.6",
     "pytest>=7.0.0",
     "requests>=2.31.0",
 ]

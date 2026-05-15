@@ -30,13 +30,14 @@ uv run pytest tests/ -v
 
 ### Project Structure
 - `main.py` - Main application entry point with command line argument parsing
-- `kindle_detector.py` - Kindle device detection functionality
-- `kindle_reader.py` - Kindle database reading and word extraction
+- `kindle/detector.py` - Kindle device detection functionality
+- `kindle/reader.py` - Kindle database reading and word extraction
+- `dictionary_service.py` - dictionaryapi.dev client with rate limiting and retries
+- `csv_exporter.py` - Writes word/definition pairs to a semicolon-CSV
 - `frequent_words.py` - Frequent words downloading, caching, and filtering
+- `errors.py` - Shared exception classes
 - `tests/` - Test suite
 - `PRD.md` - Product Requirements Document
-- `last_access.txt` - Plaintext file storing the last access date
-- `frequent_words.json` - JSON cache file storing frequent words
 
 ## Requirements
 
@@ -47,6 +48,7 @@ uv run pytest tests/ -v
 
 ## Data Storage
 
-The application stores data in two files:
-- `last_access.txt` - Plaintext file storing the last access date to track which words have been processed since the last run
-- `frequent_words.json` - JSON file caching the top 1000 most frequent English words downloaded from the internet
+The application stores state under platform-specific user directories (via `platformdirs`):
+- `last_access.txt` - in the user data dir (e.g. `~/.local/share/kindle-to-anki/` on Linux). Tracks which words have been processed since the last run.
+- `frequent_words.json` - in the user cache dir (e.g. `~/.cache/kindle-to-anki/` on Linux). Caches the top 1000 most frequent English words.
+- `words.csv` - written to the current directory by default, or to `--output-dir` if provided.

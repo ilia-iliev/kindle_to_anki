@@ -12,4 +12,6 @@ uv.lock
 
 # Local, user-specific files
 words.csv
+frequent_words.json
+last_access.txt
 .env
