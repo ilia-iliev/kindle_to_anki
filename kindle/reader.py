@@ -50,7 +50,7 @@ class KindleReader:
         with sqlite3.connect(self.database_path) as conn:
             rows = conn.execute(
                 """
-                SELECT word, timestamp
+                SELECT word, stem, timestamp
                 FROM WORDS
                 WHERE word IS NOT NULL AND timestamp > 0
                 ORDER BY timestamp DESC
@@ -59,10 +59,10 @@ class KindleReader:
 
         return [
             {
-                "word": word,
+                "word": stem.strip() if stem and stem.strip() else word,
                 "timestamp": datetime.fromtimestamp(timestamp / 1000).isoformat(),
             }
-            for word, timestamp in rows
+            for word, stem, timestamp in rows
             if word and timestamp
         ]
 
@@ -77,16 +77,25 @@ class KindleReader:
                 item["word"] for item in all_words if item["timestamp"] > last_access
             ]
 
-        filtered = self.frequent_words_manager.filter_frequent_words(words)
+        filtered = self._filter_and_deduplicate(words)
         self.last_access_manager.write(datetime.now().isoformat())
         return filtered
 
     def get_random_test_words(self, count: int = 10) -> list[str]:
         all_words = self._read_kindle_database()
-        filtered = self.frequent_words_manager.filter_frequent_words(
-            [item["word"] for item in all_words]
-        )
+        filtered = self._filter_and_deduplicate([item["word"] for item in all_words])
 
         if count >= len(filtered):
             return filtered
         return random.sample(filtered, count)
+
+    def _filter_and_deduplicate(self, words: list[str]) -> list[str]:
+        filtered = self.frequent_words_manager.filter_frequent_words(words)
+        seen: set[str] = set()
+        unique_words = []
+        for word in filtered:
+            key = word.casefold()
+            if key not in seen:
+                seen.add(key)
+                unique_words.append(word)
+        return unique_words

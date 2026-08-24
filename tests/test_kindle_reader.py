@@ -72,6 +72,37 @@ class TestKindleReader:
                 words = reader.get_words_since_last_access()
                 assert set(words) == {"apple", "banana", "cherry"}
 
+    def test_normalizes_stems_and_removes_inflection_duplicates(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            reader = self._make_reader(temp_dir)
+            with sqlite3.connect(reader.database_path) as conn:
+                conn.executemany(
+                    "INSERT INTO WORDS (id, word, stem, lang, category, timestamp, profileid) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                    [
+                        ("4", "prevaricated", "prevaricate", "en", 0, 1705323000000, "profile1"),
+                        ("5", "prevaricates", "prevaricate", "en", 0, 1705326600000, "profile1"),
+                        ("6", "prefectures", "prefecture", "en", 0, 1705330200000, "profile1"),
+                        ("7", "prefecture", "prefecture", "en", 0, 1705333800000, "profile1"),
+                    ],
+                )
+
+            with patch.object(
+                reader.frequent_words_manager,
+                "filter_frequent_words",
+                side_effect=lambda words: words,
+            ):
+                words = reader.get_words_since_last_access()
+
+            assert set(words) == {
+                "apple",
+                "banana",
+                "cherry",
+                "prevaricate",
+                "prefecture",
+            }
+            assert words.count("prevaricate") == 1
+            assert words.count("prefecture") == 1
+
     def test_get_words_since_last_access_with_date_filter(self):
         with tempfile.TemporaryDirectory() as temp_dir:
             reader = self._make_reader(temp_dir)

@@ -17,9 +17,10 @@ This project uses `uv` for dependency management and Python virtual environments
 The application will:
 1. Check if a Kindle device is attached and accessible
 2. Read the Kindle vocabulary database to extract looked-up words
-3. Filter out common words (like 'the', 'be', 'to', 'of', 'and', etc.) from the results
-4. Return words that have been looked up since the last run 
-5. Create .csv files with word definitions, ready for anki import
+3. Normalize inflected lookups to their Kindle-provided stem (for example, `prevaricated` → `prevaricate`) and remove duplicates
+4. Filter out common words (like 'the', 'be', 'to', 'of', 'and', etc.) from the results
+5. Return words that have been looked up since the last run
+6. Create .csv files with word definitions, ready for anki import
 
 ## Development
 
